@@ -1,0 +1,9 @@
+name: pandasfeatherchunkdev
+dependencies:
+    - python=2.7.12
+    - nose
+    - pandas
+    - pip:
+        - feather-format
+        
+

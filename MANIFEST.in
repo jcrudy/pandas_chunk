@@ -1,0 +1,2 @@
+include versioneer.py
+include pandas_feather_chunk/_version.py
