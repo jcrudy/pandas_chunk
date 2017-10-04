@@ -10,5 +10,5 @@ setup(name='pandas_feather_chunk',
       url='https://github.com/jcrudy/pandas_feather_chunk',
       packages=find_packages(),
       requires=[],
-      install_requires=['pandas', 'feather-format'],
+      install_requires=['pandas', 'feather-format', 'tarfile'],
      )
