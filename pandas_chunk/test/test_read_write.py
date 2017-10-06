@@ -2,14 +2,13 @@ import numpy
 import pandas
 from pandas_chunk.pandas_chunk import PandasChunkWriter,\
     PandasChunkReader, PandasBufferingStreamWriter,\
-    PandasBufferingStreamReader
+    PandasBufferingStreamReader, df_from_chunks
 from numpy.testing.utils import assert_array_almost_equal
 from nose.tools import assert_list_equal
 import os
 from nose import SkipTest
 from pandas.io.pytables import read_hdf
 from sklearn.externals import joblib
-from pandas_chunk.dfcolstore import dfcolwrite, dfcolread
 from pandas.util.testing import assert_frame_equal
 import time
 from line_profiler import LineProfiler
@@ -47,10 +46,25 @@ def test_chunk_read_write():
     finally:
         os.remove('testfile.tar')
 
+def test_df_from_chunks():
+    assert not os.path.exists('testfile.tar')
+    try:
+        dfs = [pandas.DataFrame(numpy.random.normal(size=(10000,10)), columns=['x%d' % i for i in range(10)]) for _ in range(10)]
+        writer = PandasChunkWriter('testfile.tar')
+        for df in dfs:
+            writer.write_chunk(df)
+        writer.close()
+        cols = ['x3', 'x5']
+        read_df = df_from_chunks('testfile.tar', cols)
+        df = pandas.concat(dfs)
+        assert_frame_equal(read_df, df[cols])
+    finally:
+        os.remove('testfile.tar')
+
 def test_buffering_read_write():
     assert not os.path.exists('testfile.tar')
     try:
-        df = pandas.DataFrame(numpy.random.normal(size=(10000,10)), columns=['x%d' % i for i in range(10)])
+        df = pandas.DataFrame(numpy.random.normal(size=(100,10)), columns=['x%d' % i for i in range(10)])
         writer = PandasBufferingStreamWriter('testfile.tar', max_chunk_cells=100000)
         for _, row in df.iterrows():
             writer.write_row(row)

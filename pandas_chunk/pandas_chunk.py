@@ -50,16 +50,16 @@ class PandasChunkReader(PandasChunkObject):
     def next(self):
         return self.read_chunk()
     
-# class NamedBytesIO(object):
-#     def __init__(self, name, *args, **kwargs):
-#         self.bytesio = BytesIO(*args, **kwargs)
-#         self.name = name
-#     
-#     def __getattr__(self, item):
-#         if item == 'stringio' or item == 'name':
-#             return getattr(super(NamedBytesIO, self), item)
-#         return getattr(self.bytesio, item)
-        
+def df_from_chunks(filename_or_buffer, columns=None):
+    reader = PandasChunkReader(filename_or_buffer)
+    result = pandas.DataFrame()
+    keys = columns
+    for chunk in reader:
+        if keys is None:
+            keys = list(chunk.columns)
+        result = pandas.concat([result, chunk[keys]])
+    return result
+    
 class PandasChunkWriter(PandasChunkObject):
     def __init__(self, filename_or_buffer):
         PandasChunkObject.__init__(self, filename_or_buffer)
