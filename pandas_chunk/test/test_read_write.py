@@ -6,30 +6,8 @@ from pandas_chunk.pandas_chunk import PandasChunkWriter,\
 from numpy.testing.utils import assert_array_almost_equal
 from nose.tools import assert_list_equal
 import os
-from nose import SkipTest
-from pandas.io.pytables import read_hdf
-from sklearn.externals import joblib
 from pandas.util.testing import assert_frame_equal
-import time
-from line_profiler import LineProfiler
-import pandas_chunk
-import pprofile
-import sys
 
-
-@SkipTest
-def test_hdf():
-    assert not os.path.exists('storage')
-    try:
-        n = 10000
-        df = pandas.DataFrame(numpy.random.normal(size=(10000,n)), columns=['x%d' % i for i in range(n)])
-        with open('storage', 'wb') as outfile:
-            joblib.dump(df, outfile)
-        with open('storage', 'rb') as infile:
-            df2 = joblib.load(infile)
-        assert (df2 == df).all().all()
-    finally:
-        os.remove('storage')
     
 def test_chunk_read_write():
     assert not os.path.exists('testfile.tar')

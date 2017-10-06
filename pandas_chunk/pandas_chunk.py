@@ -6,7 +6,6 @@ from tarfile import TarFile, TarInfo
 import pandas
 from io import BytesIO
 from sklearn.externals import joblib
-import time
 
 def joblib_str(obj):
     buf = BytesIO()
@@ -100,14 +99,11 @@ class PandasBufferingStreamWriter(PandasBufferingStreamObject):
         self.writer = PandasChunkWriter(self.filename_or_buffer)
     
     def flush(self):
-        t0 = time.time()
         if self.buffer:
             df = pandas.DataFrame(self.buffer)
             df.reset_index(drop=True, inplace=True)
             self.writer.write_chunk(df)
             self.buffer = []
-        t1 = time.time()
-        print 'flush', t1 - t0
         
     def write_row(self, row):
         if self.chunk_size is None:
