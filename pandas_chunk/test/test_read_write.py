@@ -13,6 +13,8 @@ from pandas.util.testing import assert_frame_equal
 import time
 from line_profiler import LineProfiler
 import pandas_chunk
+import pprofile
+import sys
 
 
 @SkipTest
@@ -64,8 +66,8 @@ def test_df_from_chunks():
 def test_buffering_read_write():
     assert not os.path.exists('testfile.tar')
     try:
-        df = pandas.DataFrame(numpy.random.normal(size=(100,10)), columns=['x%d' % i for i in range(10)])
-        writer = PandasBufferingStreamWriter('testfile.tar', max_chunk_cells=100000)
+        df = pandas.DataFrame(numpy.random.normal(size=(100000,10)), columns=['x%d' % i for i in range(10)])
+        writer = PandasBufferingStreamWriter('testfile.tar', max_chunk_cells=1000000)
         for _, row in df.iterrows():
             writer.write_row(row)
         writer.close()
@@ -79,8 +81,13 @@ def test_buffering_read_write():
     finally:
         os.remove('testfile.tar')
                           
-    
 if __name__ == '__main__':
+#     prof = pprofile.Profile()
+#     with prof():
+#         test_buffering_read_write()
+#     sys.stdout = open('statsfile.txt', 'w')
+#     prof.print_stats()
+#     sys.stdout.close()
 #     profile = LineProfiler()
 #     profile.add_function(test_buffering_read_write)
 #     profile.add_module(pandas_chunk)
@@ -90,7 +97,7 @@ if __name__ == '__main__':
     import nose
     # This code will run the test in this file.'
     module_name = sys.modules[__name__].__file__
- 
+   
     result = nose.run(argv=[sys.argv[0],
                             module_name,
                             '-s', '-v'])

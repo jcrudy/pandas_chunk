@@ -6,6 +6,7 @@ from tarfile import TarFile, TarInfo
 import pandas
 from io import BytesIO
 from sklearn.externals import joblib
+import time
 
 def joblib_str(obj):
     buf = BytesIO()
@@ -79,10 +80,9 @@ class PandasChunkWriter(PandasChunkObject):
         self.chunk += 1
 
 class PandasBufferingStreamObject(object):
-    def __init__(self, filename_or_buffer, max_chunk_cells=100000, selection=slice(None)):
+    def __init__(self, filename_or_buffer, max_chunk_cells=100000):
         self.filename_or_buffer = filename_or_buffer
         self.max_chunk_cells = max_chunk_cells
-        self.selection = selection
         self.chunk_size = None
         self.buffer = []
     
@@ -92,31 +92,28 @@ class PandasBufferingStreamObject(object):
     def init_from_row(self, row):
         row_length = len(row)
         self.chunk_size = max(int(self.max_chunk_cells) // int(row_length), 1)
-        try:
-            row.ix[self.selection]
-            self.columns = self.selection
-        except:
-            self.columns = list(row.index)[self.selection]
 
 class PandasBufferingStreamWriter(PandasBufferingStreamObject):
-    def __init__(self, filename_or_buffer, max_chunk_cells=1000000, selection=slice(None)):
+    def __init__(self, filename_or_buffer, max_chunk_cells=1000000):
         PandasBufferingStreamObject.__init__(self, filename_or_buffer=filename_or_buffer, 
-                                                    max_chunk_cells=max_chunk_cells, selection=selection)
+                                                    max_chunk_cells=max_chunk_cells)
         self.writer = PandasChunkWriter(self.filename_or_buffer)
     
     def flush(self):
+        t0 = time.time()
         if self.buffer:
             df = pandas.DataFrame(self.buffer)
             df.reset_index(drop=True, inplace=True)
             self.writer.write_chunk(df)
             self.buffer = []
+        t1 = time.time()
+        print 'flush', t1 - t0
         
     def write_row(self, row):
         if self.chunk_size is None:
             self.init_from_row(row)
-        selected_row = row.ix[self.columns]
-        self.buffer.append(selected_row)
-        if self.buffer >= self.chunk_size:
+        self.buffer.append(row)
+        if len(self.buffer) >= self.chunk_size:
             self.flush()
     
     def close(self):
@@ -124,9 +121,8 @@ class PandasBufferingStreamWriter(PandasBufferingStreamObject):
         self.writer.close()
     
 class PandasBufferingStreamReader(PandasBufferingStreamObject):
-    def __init__(self, filename_or_buffer, selection=slice(None)):
-        PandasBufferingStreamObject.__init__(self, filename_or_buffer=filename_or_buffer, 
-                                                    selection=selection)
+    def __init__(self, filename_or_buffer):
+        PandasBufferingStreamObject.__init__(self, filename_or_buffer=filename_or_buffer)
         self.reader = PandasChunkReader(self.filename_or_buffer)
         self.chunk = None
     
