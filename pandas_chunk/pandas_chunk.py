@@ -1,5 +1,5 @@
 '''
-The file format is just a tarball full of feather files.  No 
+The file format is just a tarball full of joblib files.  No 
 checking is done for consistency of the naming scheme or the chunk schemas.  
 '''
 from tarfile import TarFile, TarInfo
