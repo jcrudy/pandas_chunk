@@ -3,6 +3,7 @@ dependencies:
     - python=2.7.12
     - nose
     - pandas
+    - joblib
     - pip:
         - feather-format
         

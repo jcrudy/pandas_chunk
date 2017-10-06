@@ -12,31 +12,9 @@ from sklearn.externals import joblib
 from pandas_chunk.dfcolstore import dfcolwrite, dfcolread
 from pandas.util.testing import assert_frame_equal
 import time
+from line_profiler import LineProfiler
+import pandas_chunk
 
-@SkipTest
-def test_dfcolstore():
-    assert not os.path.exists('storage.df')
-    assert not os.path.exists('storage.jbl')
-    try:
-        n = 10000
-        df = pandas.DataFrame(numpy.random.normal(size=(100,n)), columns=['x%d' % i for i in range(n)])
-        t0 = time.time()
-        dfcolwrite(df, 'storage.df')
-        df2 = dfcolread('storage.df')
-        t1 = time.time()
-        for col in df.columns:
-            joblib.dump(df[col], 'storage.jbl')
-            joblib.load('storage.jbl')
-        t2 = time.time()
-        print t2 - t1, t1 - t0
-#         hdf = pandas.HDFStore('storage.h5')
-#         hdf.put('d1', df, format='table', data_columns=True)
-#         hdf.close()
-#         df2 = read_hdf('storage.h5', 'd1', columns=['x5','x3'])
-        assert_frame_equal(df, df2[df.columns], check_names=True)
-    finally:
-        os.remove('storage.df')
-        os.remove('storage.jbl')
 
 @SkipTest
 def test_hdf():
@@ -48,10 +26,6 @@ def test_hdf():
             joblib.dump(df, outfile)
         with open('storage', 'rb') as infile:
             df2 = joblib.load(infile)
-#         hdf = pandas.HDFStore('storage.h5')
-#         hdf.put('d1', df, format='table', data_columns=True)
-#         hdf.close()
-#         df2 = read_hdf('storage.h5', 'd1', columns=['x5','x3'])
         assert (df2 == df).all().all()
     finally:
         os.remove('storage')
@@ -72,7 +46,7 @@ def test_chunk_read_write():
             assert_list_equal(list(df.columns), list(new_df.columns))
     finally:
         os.remove('testfile.tar')
-    
+
 def test_buffering_read_write():
     assert not os.path.exists('testfile.tar')
     try:
@@ -82,7 +56,10 @@ def test_buffering_read_write():
             writer.write_row(row)
         writer.close()
         reader = PandasBufferingStreamReader('testfile.tar')
-        new_df = pandas.DataFrame(list(reader))
+        new_values = []
+        for row in reader:
+            new_values.append(row)
+        new_df = pandas.DataFrame(new_values)
         assert_array_almost_equal(numpy.asarray(df), numpy.asarray(new_df))
         assert_list_equal(list(df.columns), list(new_df.columns))
     finally:
@@ -90,11 +67,16 @@ def test_buffering_read_write():
                           
     
 if __name__ == '__main__':
+#     profile = LineProfiler()
+#     profile.add_function(test_buffering_read_write)
+#     profile.add_module(pandas_chunk)
+#     profile.runcall(test_buffering_read_write)
+#     profile.print_stats()
     import sys
     import nose
     # This code will run the test in this file.'
     module_name = sys.modules[__name__].__file__
-
+ 
     result = nose.run(argv=[sys.argv[0],
                             module_name,
                             '-s', '-v'])
