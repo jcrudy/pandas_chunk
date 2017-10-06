@@ -42,8 +42,8 @@ def get_config():
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = ""
-    cfg.parentdir_prefix = "pandas_feather_chunk"
-    cfg.versionfile_source = "pandas_feather_chunk/_version.py"
+    cfg.parentdir_prefix = "pandas_chunk"
+    cfg.versionfile_source = "pandas_chunk/_version.py"
     cfg.verbose = False
     return cfg
 
