@@ -28,7 +28,7 @@ class PandasChunkObject(object):
 class PandasChunkReader(PandasChunkObject):
     def __init__(self, filename_or_buffer, *args, **kwargs):
         PandasChunkObject.__init__(self, filename_or_buffer, *args, **kwargs)
-        self.tarball = TarFile.open(self.filename_or_buffer, 'r')
+        self.tarball = TarFile.open(self.filename_or_buffer, 'r:gz')
     
     def read_chunk(self):
         try:
@@ -63,7 +63,7 @@ def df_from_chunks(filename_or_buffer, columns=None):
 class PandasChunkWriter(PandasChunkObject):
     def __init__(self, filename_or_buffer):
         PandasChunkObject.__init__(self, filename_or_buffer)
-        self.tarball = TarFile.open(self.filename_or_buffer, 'w')
+        self.tarball = TarFile.open(self.filename_or_buffer, 'w:gz')
         self.chunk = 0
         
     def write_chunk(self, dataframe):
