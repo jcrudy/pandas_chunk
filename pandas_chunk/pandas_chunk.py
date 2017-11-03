@@ -50,11 +50,13 @@ class PandasChunkReader(PandasChunkObject):
     def next(self):
         return self.read_chunk()
     
-def df_from_chunks(filename_or_buffer, columns=None):
+def df_from_chunks(filename_or_buffer, columns=None, max_chunks=float('inf')):
     reader = PandasChunkReader(filename_or_buffer)
     result = pandas.DataFrame()
     keys = columns
-    for chunk in reader:
+    for i, chunk in enumerate(reader):
+        if i > max_chunks:
+            break
         if keys is None:
             keys = list(chunk.columns)
         result = pandas.concat([result, chunk[keys]])
