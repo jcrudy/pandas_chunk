@@ -139,8 +139,8 @@ class PandasBufferingStreamReader(PandasBufferingStreamObject):
         return row
 
 
-def convert_csv_to_chunk_format(infilename, outfilename, chunksize=10000, columns=slice(None)):    
-    reader = pandas.read_csv(infilename, chunksize=chunksize, low_memory=False)
+def convert_csv_to_chunk_format(infilename, outfilename, chunksize=10000, columns=slice(None), nrows=None):    
+    reader = pandas.read_csv(infilename, chunksize=chunksize, low_memory=False, nrows=nrows)
     writer = PandasChunkWriter(outfilename)
     for chunk in reader:
         writer.write_chunk(chunk[columns])
