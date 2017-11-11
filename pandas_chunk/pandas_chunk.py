@@ -28,7 +28,7 @@ class PandasChunkObject(object):
 class PandasChunkReader(PandasChunkObject):
     def __init__(self, filename_or_buffer, *args, **kwargs):
         PandasChunkObject.__init__(self, filename_or_buffer, *args, **kwargs)
-        self.tarball = TarFile.open(self.filename_or_buffer, 'r:gz')
+        self.tarball = TarFile.open(self.filename_or_buffer, 'r|gz')
     
     def read_chunk(self):
         try:
@@ -41,7 +41,7 @@ class PandasChunkReader(PandasChunkObject):
         if current_tarinfo is None:
             raise StopIteration()
         fileobj = self.tarball.extractfile(current_tarinfo)
-        chunk = joblib.load(fileobj)
+        chunk = joblib.load(BytesIO(fileobj.read()))
         return chunk
     
     def __iter__(self):
@@ -50,22 +50,32 @@ class PandasChunkReader(PandasChunkObject):
     def next(self):
         return self.read_chunk()
     
-def df_from_chunks(filename_or_buffer, columns=None, max_chunks=float('inf')):
+def df_from_chunks(filename_or_buffer, columns=None, max_chunks=float('inf'), verbose=False):
     reader = PandasChunkReader(filename_or_buffer)
-    result = pandas.DataFrame()
+#     result = pandas.DataFrame()
     keys = columns
+    result = []
     for i, chunk in enumerate(reader):
         if i > max_chunks:
             break
         if keys is None:
             keys = list(chunk.columns)
-        result = pandas.concat([result, chunk[keys]])
+        result.append(chunk[keys])# = pandas.concat([result, chunk[keys]])
+        if verbose:
+            print('Loaded %d chunks' % i)
+    
+    if verbose:
+        print('All chunks loaded.  Concatenating')
+    result = pandas.concat(result)
+    if verbose:
+        print('Concatenation complete.')
+        print('Dataframe loading from chunks complete.')
     return result
     
 class PandasChunkWriter(PandasChunkObject):
     def __init__(self, filename_or_buffer):
         PandasChunkObject.__init__(self, filename_or_buffer)
-        self.tarball = TarFile.open(self.filename_or_buffer, 'w:gz')
+        self.tarball = TarFile.open(self.filename_or_buffer, 'w|gz')
         self.chunk = 0
         
     def write_chunk(self, dataframe):
@@ -141,10 +151,12 @@ class PandasBufferingStreamReader(PandasBufferingStreamObject):
         return row
 
 
-def convert_csv_to_chunk_format(infilename, outfilename, chunksize=10000, columns=slice(None), nrows=None):    
+def convert_csv_to_chunk_format(infilename, outfilename, chunksize=10000, columns=slice(None), nrows=None, verbose=False):    
     reader = pandas.read_csv(infilename, chunksize=chunksize, low_memory=False, nrows=nrows)
     writer = PandasChunkWriter(outfilename)
-    for chunk in reader:
+    for i, chunk in enumerate(reader):
+        if verbose:
+            print('Converting chunk %d' % i)
         writer.write_chunk(chunk[columns])
     writer.close()
 
