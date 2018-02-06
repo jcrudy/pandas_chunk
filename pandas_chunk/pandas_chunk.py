@@ -7,6 +7,7 @@ import pandas
 from io import BytesIO
 from sklearn.externals import joblib
 from toolz.functoolz import identity
+from six import Iterator
 
 def joblib_str(obj):
     buf = BytesIO()
@@ -26,7 +27,7 @@ class PandasChunkObject(object):
     def close(self):
         self.tarball.close()
 
-class PandasChunkReader(PandasChunkObject):
+class PandasChunkReader(PandasChunkObject, Iterator):
     def __init__(self, filename_or_buffer, *args, **kwargs):
         PandasChunkObject.__init__(self, filename_or_buffer, *args, **kwargs)
         self.tarball = TarFile.open(self.filename_or_buffer, 'r|gz')
@@ -34,7 +35,7 @@ class PandasChunkReader(PandasChunkObject):
     def read_chunk(self):
         try:
             current_tarinfo = self.tarball.next()
-        except IOError, e:
+        except IOError as e:
             if e.message == 'TarFile is closed':
                 raise StopIteration()
             else:
@@ -48,7 +49,7 @@ class PandasChunkReader(PandasChunkObject):
     def __iter__(self):
         return self
     
-    def next(self):
+    def __next__(self):
         return self.read_chunk()
     
 def df_from_chunks(filename_or_buffer, columns=None, max_chunks=float('inf'), verbose=False):
@@ -129,7 +130,7 @@ class PandasBufferingStreamWriter(PandasBufferingStreamObject):
         self.flush()
         self.writer.close()
     
-class PandasBufferingStreamReader(PandasBufferingStreamObject):
+class PandasBufferingStreamReader(PandasBufferingStreamObject, Iterator):
     def __init__(self, filename_or_buffer):
         PandasBufferingStreamObject.__init__(self, filename_or_buffer=filename_or_buffer)
         self.reader = PandasChunkReader(self.filename_or_buffer)
@@ -138,7 +139,7 @@ class PandasBufferingStreamReader(PandasBufferingStreamObject):
     def __iter__(self):
         return self
     
-    def next(self):
+    def __next__(self):
         return self.read_row()
     
     def read_row(self):
