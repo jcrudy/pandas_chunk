@@ -6,6 +6,7 @@ from tarfile import TarFile, TarInfo
 import pandas
 from io import BytesIO
 from sklearn.externals import joblib
+from toolz.functoolz import identity
 
 def joblib_str(obj):
     buf = BytesIO()
@@ -151,12 +152,12 @@ class PandasBufferingStreamReader(PandasBufferingStreamObject):
         return row
 
 
-def convert_csv_to_chunk_format(infilename, outfilename, chunksize=10000, columns=slice(None), nrows=None, verbose=False):    
+def convert_csv_to_chunk_format(infilename, outfilename, chunksize=10000, columns=slice(None), nrows=None, verbose=False, transformation=identity):    
     reader = pandas.read_csv(infilename, chunksize=chunksize, low_memory=False, nrows=nrows)
     writer = PandasChunkWriter(outfilename)
     for i, chunk in enumerate(reader):
         if verbose:
             print('Converting chunk %d' % i)
-        writer.write_chunk(chunk[columns])
+        writer.write_chunk(transformation(chunk[columns]))
     writer.close()
 
